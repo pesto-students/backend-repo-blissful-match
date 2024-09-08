@@ -7,7 +7,12 @@ const path = require('path');
 app.use(bodyParser.json());
 const config = require('./config/config');
 
-app.use(bodyParser.urlencoded({ extended: false }));
+// Increase limit for JSON payloads
+app.use(bodyParser.json({ limit: '50mb' })); // Adjust the limit as needed
+
+// Increase limit for URL-encoded payloads
+app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
+//app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(helmet.frameguard());
 app.use(helmet.hsts({maxAge: 5184000}));

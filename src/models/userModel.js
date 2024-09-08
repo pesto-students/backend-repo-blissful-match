@@ -280,13 +280,11 @@ const userSchema = new Schema({
     type: {
       religion: {
         type: Schema.Types.ObjectId,
-        ref: "religions",
-        required: true,
+        ref: "religions"
       },
       caste: {
         type: Schema.Types.ObjectId,
-        ref: "caste_lists",
-        required: true,
+        ref: "caste_lists"
       },
       caste_category: {
         type: String,
@@ -294,8 +292,7 @@ const userSchema = new Schema({
       },
       mother_tongue: {
         type: Schema.Types.ObjectId,
-        ref: "mother_tongues",
-        required: true,
+        ref: "mother_tongues"
       },
       family_status: {
         type: String,
