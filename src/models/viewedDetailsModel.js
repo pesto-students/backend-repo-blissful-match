@@ -12,6 +12,12 @@ const modelsSchema = new Schema({
     ref: "users",
     required: true,
   },
+  viewed_at_date: {
+    type: String,
+  },
+  viewed_at_time: {
+    type: String,
+  },
   updated_at: {
     type: Date,
     default: new Date().toISOString(),

@@ -1,7 +1,7 @@
-const AWS = require('aws-sdk');
+const AWS = require("aws-sdk");
 const { v4: uuidv4 } = require("uuid");
 const config = require("../config/config.js");
-const S3 = new AWS.S3({region: config.REGION});
+const S3 = new AWS.S3({ region: config.REGION });
 const ReligionModel = require("../models/religionModel");
 const CasteModel = require("../models/casteModel");
 const MotherTongueModel = require("../models/motherTongueModel");
@@ -10,7 +10,12 @@ const PlansModel = require("../models/plansModel");
 const AdminModel = require("../models/adminDetailsModel");
 const UserModel = require("../models/userModel.js");
 
-const { buildQueryFilter, sendEmail, uploadFileInS3 } = require("../utils/helpers");
+const {
+  buildQueryFilter,
+  sendEmail,
+  uploadFileInS3,
+  getFileFromS3,
+} = require("../utils/helpers");
 const { mongoose } = require("mongoose");
 const fs = require("fs").promises;
 const filePath = "../plans.json";
@@ -285,49 +290,145 @@ module.exports = {
       });
     }
   },
+  s3FileUpload: async (req, res, next) => {
+    try {
+      const keys = Object.keys(req.files);
+      let s3Key = keys.length ? keys[0] : "";
+      console.log("s3Key____________", s3Key);
+      if (!s3Key || !config.S3_UPLOAD_FOR.includes(s3Key)) {
+        return res.status(401).json({
+          status: "error",
+          message: "Please provide correct file option.",
+        });
+      }
+      const files = req.files[s3Key];
+      const splitFileName = files.name.split(".");
+      const fileExt = splitFileName[splitFileName.length - 1];
+      let newFileName = uuidv4();
+      newFileName = `${newFileName}.${fileExt}`;
+      const S3Key = `${config[s3Key]}/${req.user.id}/${newFileName}`;
+      const fileBody = Buffer.from(files.data, "base64"); // Assuming base64 encoded file
+
+      let s3Object = {
+        Bucket: config.S3_BUCKET,
+        Key: S3Key,
+        ContentType: files.mimetype,
+        ContentEncoding: "base64",
+        Body: fileBody,
+      };
+      await uploadFileInS3(s3Object);
+
+      let s3GetObject = {
+        Bucket: config.S3_BUCKET,
+        Key: S3Key,
+        Expires: config.SIGNED_URL_EXPIRE_SECONDS,
+      };
+      let fileAccessUrl = await getFileFromS3(s3GetObject);
+      let listOfFiles = {
+        fileUrl: fileAccessUrl,
+        file_name: newFileName,
+      };
+
+      res.status(201).json({
+        status: "success",
+        message: "File(s) uploaded successfully.",
+        data: listOfFiles,
+      });
+    } catch (error) {
+      console.log("error:: ", JSON.stringify(error));
+      res.status(401).json({
+        status: "error",
+        message:
+          error?.message || "There is some problem, please try again later.",
+      });
+    }
+  },
   uploadFiles: async (req, res, next) => {
     try {
-      console.log(req.files)
+      console.log(req.files);
       if (!req?.files) {
         res.status(401).json({
           status: "error",
-          message: "No file selected"
+          message: "No file selected",
         });
       }
-      if(req.files?.pan){
-        
+      const keys = Object.keys(req.files);
+      let s3Key = keys.length ? keys[0] : "";
+      console.log("s3Key____________", s3Key);
+      if (!s3Key || !config.S3_UPLOAD_FOR.includes(s3Key)) {
+        return res.status(401).json({
+          status: "error",
+          message: "Please provide correct file option.",
+        });
       }
-      if(req.files?.aadhar){
-        
-      }
-      if(req.files?.profile){
-        
-      }
-      if(req.files?.astro){
-        
-      }
-      if(req.files?.gallery){
-        
-      }
+      const files = req.files[s3Key];
+      let listOfFiles;
 
-      if(req.files?.success_stories){
-        const files = req.files?.success_stories
-        
+      if (files.length) {
+        listOfFiles = [];
         for (const filePath of files) {
           const splitFileName = filePath.name.split(".");
           const fileExt = splitFileName[splitFileName.length - 1];
-          const S3Key = `success_stories/${req.user.id}/${filePath.name}`;
+          let newFileName = uuidv4();
+          newFileName = `${newFileName}.${fileExt}`;
+          const S3Key = `${config[s3Key]}/${req.user.id}/${newFileName}`;
+          const fileBody = Buffer.from(filePath.data, "base64");
+
           let s3Object = {
             Bucket: config.S3_BUCKET,
-            Key : S3Key,
+            Key: S3Key,
             ContentType: filePath.mimetype,
-            Body : filePath.data,
-            ACL: "public-read"
-          }
-          console.log("s3Object_______", s3Object)
+            ContentEncoding: "base64",
+            Body: fileBody,
+          };
+          console.log("s3Object_______________________", s3Object);
           await uploadFileInS3(s3Object);
+
+          let s3GetObject = {
+            Bucket: config.S3_BUCKET,
+            Key: S3Key,
+            Expires: config.SIGNED_URL_EXPIRE_SECONDS,
+          };
+          let fileAccessUrl = await getFileFromS3(s3GetObject);
+          listOfFiles.push({
+            fileUrl: fileAccessUrl,
+            file_name: newFileName,
+          });
         }
-      } 
+      } else {
+        const splitFileName = files.name.split(".");
+        const fileExt = splitFileName[splitFileName.length - 1];
+        let newFileName = uuidv4();
+        newFileName = `${newFileName}.${fileExt}`;
+        const S3Key = `${config[s3Key]}/${req.user.id}/${newFileName}`;
+        const fileBody = Buffer.from(files.data, "base64");
+
+        let s3Object = {
+          Bucket: config.S3_BUCKET,
+          Key: S3Key,
+          ContentType: files.mimetype,
+          ContentEncoding: "base64",
+          Body: fileBody,
+        };
+        console.log("s3Object_______________________", s3Object);
+        await uploadFileInS3(s3Object);
+
+        let s3GetObject = {
+          Bucket: config.S3_BUCKET,
+          Key: S3Key,
+          Expires: config.SIGNED_URL_EXPIRE_SECONDS,
+        };
+        let fileAccessUrl = await getFileFromS3(s3GetObject);
+        listOfFiles = {
+          fileUrl: fileAccessUrl,
+          file_name: newFileName,
+        };
+      }
+      return res.status(201).json({
+        status: "success",
+        message: "File(s) uploaded successfully.",
+        data: listOfFiles,
+      });
     } catch (error) {
       console.log("error:: ", JSON.stringify(error));
       res.status(401).json({

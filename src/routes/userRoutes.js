@@ -20,6 +20,7 @@ router.post('/change-password', authUtil.ensureAuthenticated, UserController.cha
 router.get('/get-my-profile', authUtil.ensureAuthenticated, UserController.getMyProfile);
 router.get('/get-member-profile', authUtil.ensureAuthenticated, UserController.getMembersProfile);
 router.get('/my-viewed-history', authUtil.ensureAuthenticated, UserController.getViewedHistory);
+router.post('/change-password1', authUtil.ensureAuthenticated, UserController.changePassword);
 router.post("/*", authUtil.ensureAuthenticated, function (req, res, next) {
     res
         .status(403)

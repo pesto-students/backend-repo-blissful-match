@@ -1,7 +1,7 @@
 const User = require("../models/userModel");
 const jwt = require("jsonwebtoken");
 const config = require("../config/config");
-const { mongoose } = require('mongoose')
+const { mongoose } = require("mongoose");
 let timestamp = new Date();
 timestamp = timestamp.getTime() + timestamp.getTimezoneOffset() * 60000; //to UTC timestamp
 
@@ -12,13 +12,11 @@ module.exports.ensureAuthenticated = async (req, res, next) => {
     jwt.verify(token, config.JWT_SECRET, async (err, decoded) => {
       if (err) {
         if (err.name == "TokenExpiredError") {
-          return res
-            .status(401)
-            .json({
-              status: "error",
-              message: "Unauthorized access.",
-              tokenExpired: true,
-            });
+          return res.status(401).json({
+            status: "error",
+            message: "Unauthorized access.",
+            tokenExpired: true,
+          });
         } else {
           console.log(err);
           return res
@@ -29,18 +27,17 @@ module.exports.ensureAuthenticated = async (req, res, next) => {
       req.decoded = decoded;
       try {
         const objectId = new mongoose.Types.ObjectId(decoded.id);
-        const userDetails = await User.findOne({ _id: objectId});
+        const userDetails = await User.findOne({ _id: objectId });
 
         let currentUser = [];
         if (Object.keys(userDetails).length > 0) {
           currentUser = {
             id: userDetails?._id || "",
-            first_name: userDetails?.first_name || "",
-            middle_name: userDetails?.middle_name || "",
-            last_name: userDetails?.last_name || "",
-            email_address: userDetails?.email_address || "",
-            profile_image: userDetails?.profile_image || "",
-            gender: userDetails?.gender || "",
+            first_name: userDetails?.basic_info?.first_name || "",
+            last_name: userDetails?.basic_info?.last_name || "",
+            email_address: userDetails?.basic_info?.email_address || "",
+            profile_image: userDetails?.documents_photos?.profile_image || "",
+            gender: userDetails?.physical_attributes?.gender || "",
           };
         }
         req.user = currentUser;
@@ -69,17 +66,16 @@ module.exports.optionallyAuthenticated = async (req, res, next) => {
         if (req.decoded) {
           try {
             const objectId = new mongoose.Types.ObjectId(decoded.id);
-            const userDetails = await User.findOne({ _id: objectId});
+            const userDetails = await User.findOne({ _id: objectId });
             var currentUser = [];
             if (Object.keys(userDetails).length > 0) {
               currentUser = {
                 id: userDetails?._id || "",
-                first_name: userDetails?.first_name || "",
-                middle_name: userDetails?.middle_name || "",
-                last_name: userDetails?.last_name || "",
-                email_address: userDetails?.email_address || "",
-                profile_image: userDetails?.profile_image || "",
-                gender: userDetails?.gender || "",
+                first_name: userDetails?.basic_info?.first_name || "",
+                last_name: userDetails?.basic_info?.last_name || "",
+                email_address: userDetails?.basic_info?.email_address || "",
+                profile_image: userDetails?.documents_photos?.profile_image || "",
+                gender: userDetails?.physical_attributes?.gender || "",
               };
             }
             req.user = currentUser;
